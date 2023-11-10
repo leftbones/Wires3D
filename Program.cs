@@ -22,6 +22,8 @@ class Program {
             projection = CameraProjection.CAMERA_PERSPECTIVE
         };
 
+        var ReticlePos = Global.WindowSize / 2;
+
         // World
         var RNG = new RNG();
 
@@ -29,17 +31,22 @@ class Program {
         var StartPos = new Vector3(-16, 0, -16);
         for (int x = 0; x < 32; x++) {
             for (int z = 0; z < 32; z++) {
-                var B = new Block(new Vector3(StartPos.X + x, StartPos.Y, StartPos.Z + z), new Color(0, RNG.Range(150, 200), 0, 255));
+                var B = new Block(new Vector3(StartPos.X + x, StartPos.Y + RNG.Range(0, 0), StartPos.Z + z), new Color(0, RNG.Range(150, 200), 0, 255));
                 Blocks.Add(B);
             }
         }
 
-        // Other
+        // Cursor
         int CursorAlpha = 0;
         int AlphaDir = 1;
 
+        Block? PickedBlock;
+        RayCollision CursorPicker = new();
+        float PickDistance = 6;
+
         // Main Loop
         while (!WindowShouldClose()) {
+            //
             // Update
             UpdateCamera(ref Camera, CameraMode.CAMERA_FIRST_PERSON);
 
@@ -48,6 +55,14 @@ class Program {
                     EnableCursor();
                 } else {
                     break;
+                }
+            }
+
+            if (IsMouseButtonPressed(MouseButton.MOUSE_BUTTON_LEFT)) {
+                if (IsCursorHidden()) {
+                    // Break block
+                } else {
+                    DisableCursor();
                 }
             }
 
@@ -61,10 +76,24 @@ class Program {
                 Camera.target.Y -= 0.1f;
             }
 
+            // Cursor
             CursorAlpha += 4 * AlphaDir;
             if (CursorAlpha == 0) { AlphaDir = 1; }
             if (CursorAlpha == 100) { AlphaDir = -1; }
 
+            PickedBlock = null;
+            CursorPicker.distance = Global.FloatMax;
+            var CursorRay = GetMouseRay(ReticlePos, Camera);
+
+            foreach (var Block in Blocks) {
+                var BlockHitInfo = GetRayCollisionBox(CursorRay, Block.BoundingBox);
+                if (BlockHitInfo.hit && BlockHitInfo.distance < PickDistance && BlockHitInfo.distance < CursorPicker.distance) {
+                    CursorPicker = BlockHitInfo;
+                    PickedBlock = Block;
+                }
+            }
+
+            //
             // Draw
             BeginDrawing();
             ClearBackground(Color.SKYBLUE);
@@ -77,16 +106,17 @@ class Program {
             }
 
             // Cursor
-            var CursorPos = new Vector3(
-                MathF.Ceiling(Camera.target.X - 0.5f),
-                MathF.Ceiling(Camera.target.Y - 0.5f),
-                MathF.Ceiling(Camera.target.Z - 0.5f)
-            );
-            DrawCube(CursorPos, 1.01f, 1.01f, 1.01f, new Color(255, 255, 255, CursorAlpha));
-            DrawCubeWires(CursorPos, 1.01f, 1.01f, 1.01f, Color.WHITE);
+            if (PickedBlock is not null) {
+                DrawCube(PickedBlock.Position, 1.01f, 1.01f, 1.01f, new Color(255, 255, 255, CursorAlpha));
+                DrawCubeWires(PickedBlock.Position, 1.01f, 1.01f, 1.01f, Color.WHITE);
+            }
 
             EndMode3D();
 
+            // Reticle
+            DrawCircleLines((int)ReticlePos.X, (int)ReticlePos.Y, 4.0f, Color.WHITE);
+
+            // HUD Text
             var CamPos = $"X: {(MathF.Round(Camera.position.X * 2) / 2).ToString("0.0")}, Y: {(MathF.Round(Camera.position.Y * 2) / 2).ToString("0.0")}, Z: {(MathF.Round(Camera.position.Z * 2) / 2).ToString("0.0")}";
 
             DrawText($"{CamPos}", 11, 11, 20, Color.BLACK);
