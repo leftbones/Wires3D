@@ -14,7 +14,7 @@ class World {
 
     public bool ShouldExit { get; private set; } = false;
 
-    private readonly RNG RNG = new RNG();
+    public readonly RNG RNG = new RNG();
 
     public World(float size, float height) {
         Size = new Vector3(size, height, size);
@@ -34,9 +34,15 @@ class World {
         Players = new List<Player>();
     }
 
+    // Add a new player to the world (at the spawn point)
     public void AddPlayer() {
         var NewPlayer = new Player(this, SpawnPoint);
         Players.Add(NewPlayer);
+    }
+
+    // Add a block to the world
+    public void SetBlock(Block block) {
+        Blocks.Add(block);
     }
 
     public void Update() {
@@ -60,6 +66,7 @@ class World {
         }
     }
 
+    // Set the program to exit at the end of the current update cycle
     public void Exit() {
         ShouldExit = true;
     }
