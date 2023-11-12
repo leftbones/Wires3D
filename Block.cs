@@ -10,11 +10,17 @@ class Block {
 
     public BoundingBox BoundingBox { get; private set; }
 
+    public bool ShouldBeRemoved { get; private set; } = false;
+
     public Block(Vector3 position, Color color) {
         Position = position;
         Color = color;
 
         BoundingBox = new BoundingBox(Position - new Vector3(0.5f, 0.5f, 0.5f), Position - new Vector3(0.5f, 0.5f, 0.5f) + Vector3.One);
+    }
+
+    public virtual void Destroy() {
+        ShouldBeRemoved = true;
     }
 
     public virtual void Draw() {
