@@ -7,23 +7,25 @@ namespace Wires3D;
 class Program {
     static void Main(string[] args) {
         // Window Setup
+        SetConfigFlags(ConfigFlags.FLAG_MSAA_4X_HINT);
         InitWindow((int)Global.WindowSize.X, (int)Global.WindowSize.Y, "Wires3D");
         SetTargetFPS(60);
 
         SetExitKey(KeyboardKey.KEY_NULL);
         DisableCursor();
 
-        // World
-        var World = new World(64, 64);
-        World.AddPlayer();
+        // Server Setup
+        var Server = new Server();
 
+
+        //
         // Main Loop
         while (!WindowShouldClose()) {
             //
             // Update
-            World.Update();
+            Server.Update();
 
-            if (World.ShouldExit) {
+            if (Server.ShouldExit) {
                 break;
             }
 
@@ -32,7 +34,7 @@ class Program {
             BeginDrawing();
             ClearBackground(Color.SKYBLUE);
 
-            World.Draw();
+            Server.Draw();
 
             EndDrawing();
         }

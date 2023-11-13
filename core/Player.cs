@@ -18,8 +18,11 @@ class Player {
     private float Acceleration = 0.02f;
     private float Friction = 0.1f;
 
-    private Block? PickedBlock;
     private RayCollision CursorPicker = new();
+
+    public Block? PickedBlock { get; set; }
+    public Node? PickedNode { get; set; }
+    public bool HoldingWire { get; set; }
 
     private int CursorAlpha = 0;
     private int AlphaDir = 1;
@@ -44,9 +47,6 @@ class Player {
 
         Position += Velocity;
 
-        // Input
-        Input();
-
         // Cursor
         PickedBlock = null;
         CursorPicker.distance = Global.FloatMax;
@@ -62,11 +62,19 @@ class Player {
     }
 
     public void Draw() {
-        Camera.BeginDraw();
-
         // Blocks
         foreach (var Block in World.Blocks) {
             Block.Draw();
+        }
+
+        // Wires
+        foreach (var Wire in World.Wires) {
+            DrawCapsule(Wire.NodeA.Position, Wire.NodeB.Position, 0.1f, 1, 1, Wire.Color);
+        }
+
+        if (HoldingWire) {
+            var EndPos = PickedBlock is Node ? PickedBlock.Position : Camera.Target;
+            DrawCapsule(PickedNode!.Position, EndPos, 0.1f, 1, 1, new Color(255, 0, 0, CursorAlpha + 50));
         }
 
         // Cursor
@@ -77,66 +85,6 @@ class Player {
         if (PickedBlock is not null) {
             DrawCube(PickedBlock.Position, 1.01f, 1.01f, 1.01f, new Color(255, 255, 255, CursorAlpha));
             DrawCubeWires(PickedBlock.Position, 1.01f, 1.01f, 1.01f, Color.WHITE);
-        }
-
-        Camera.EndDraw();
-
-        // Reticle
-        DrawCircleLines((int)Global.WindowSize.X / 2, (int)Global.WindowSize.Y / 2, 4.0f, Color.WHITE);
-
-        // HUD Text
-        var CamPos = $"X: {(MathF.Round(Camera.Position.X * 2) / 2).ToString("0.0")}, Y: {(MathF.Round(Camera.Position.Y * 2) / 2).ToString("0.0")}, Z: {(MathF.Round(Camera.Position.Z * 2) / 2).ToString("0.0")}";
-
-        DrawText($"{CamPos}", 11, 11, 20, Color.BLACK);
-        DrawText($"{CamPos}", 10, 10, 20, Color.WHITE);
-
-    }
-
-    public void Input() {
-        // Exit
-        if (IsKeyPressed(KeyboardKey.KEY_ESCAPE)) {
-            if (IsCursorHidden()) {
-                EnableCursor();
-                Camera.MouseLookEnabled = false;
-            } else {
-                World.Exit();
-            }
-        }
-
-        // Place Block
-        if (IsMouseButtonPressed(MouseButton.MOUSE_BUTTON_RIGHT)) {
-            if (IsCursorHidden()) {
-                if (PickedBlock is not null) {
-                    var Block = new Block(PickedBlock.Position + new Vector3(0, 1, 0), new Color(World.RNG.Range(0, 255), World.RNG.Range(0, 255), World.RNG.Range(0, 255), 255));
-                    World.SetBlock(Block);
-                }
-            }
-        }
-
-        // Destroy Block / Focus Window
-        if (IsMouseButtonDown(MouseButton.MOUSE_BUTTON_LEFT)) {
-            if (IsCursorHidden()) {
-                PickedBlock?.Destroy();
-            } else {
-                DisableCursor();
-                Camera.MouseLookEnabled = true;
-            }
-        }
-
-        // Move
-        if (IsKeyDown(KeyboardKey.KEY_W)) { Move(new Vector3(0, 0, -1)); }
-        if (IsKeyDown(KeyboardKey.KEY_S)) { Move(new Vector3(0, 0, 1)); }
-        if (IsKeyDown(KeyboardKey.KEY_A)) { Move(new Vector3(-1, 0, 0)); }
-        if (IsKeyDown(KeyboardKey.KEY_D)) { Move(new Vector3(1, 0, 0)); }
-
-        // Ascend
-        if (IsKeyDown(KeyboardKey.KEY_SPACE)) {
-            Move(new Vector3(0, 1.0f, 0));
-        }
-
-        // Descend
-        if (IsKeyDown(KeyboardKey.KEY_LEFT_SHIFT)) {
-            Move(new Vector3(0, -1.0f, 0));
         }
     }
 }

@@ -5,10 +5,11 @@ using static Raylib_cs.Raymath;
 
 namespace Wires3D;
 
-class Camera {
+unsafe class Camera {
     public Player Player { get; private set; }
 
     public Vector3 Position { get { return Cam.position; } }
+    public Vector3 Target { get { return Cam.target; } }
     public Vector2 ViewAngle { get; private set; }
 
     public bool MouseLookEnabled { get; set; } = true;
@@ -17,6 +18,8 @@ class Camera {
     public float Sensitivity = 800.0f;
 
     private Camera3D Cam;
+
+    private Shader Shader = LoadShader("assets/shaders/lighting.vs", "assets/shaders/lighting.fs");
 
     public Camera(Player player) {
         Player = player;
@@ -28,9 +31,15 @@ class Camera {
             fovy = FieldOfView,
             projection = CameraProjection.CAMERA_PERSPECTIVE
         };
+
+        Shader.locs[(int)ShaderLocationIndex.SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(Shader, "viewPos");
+        int AmbientLoc = GetShaderLocation(Shader, "ambient");
+        float[] Ambient = new[] { 0.1f, 0.1f, 0.1f, 1.0f };
+        SetShaderValue(Shader, AmbientLoc, Ambient, ShaderUniformDataType.SHADER_UNIFORM_VEC4);
     }
 
     public void Update() {
+        // Camera Position + Target
         if (MouseLookEnabled) {
             var MouseDelta = GetMouseDelta();
 
@@ -50,8 +59,8 @@ class Camera {
 
         }
 
-        Cam.target = Cam.position + Vector3Transform(new Vector3(0, 0, 1), MatrixRotateZYX(new Vector3(-ViewAngle.Y, ViewAngle.X, 0)));
         Cam.position = Player.Position;
+        Cam.target = Cam.position + Vector3Transform(new Vector3(0, 0, 1), MatrixRotateZYX(new Vector3(-ViewAngle.Y, ViewAngle.X, 0)));
     }
 
     // Get a raycast from the center of the screen in the camera's direction
